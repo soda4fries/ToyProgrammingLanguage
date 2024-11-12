@@ -1,9 +1,28 @@
 grammar SimpleLang;
 
-program: (functionDecl | statement)* EOF;
+program: expr* EOF;
+
+expr
+    : functionDecl
+    | varDecl
+    | assignment
+    | ifExpr
+    | block
+    | functionCall
+    | primary
+    | '-' expr
+    | 'not' expr
+    | typeCast
+    | expr op=('*'|'/') expr
+    | expr op=('+'|'-') expr
+    | expr op=('>'|'<'|'>='|'<='|'=='|'!=') expr
+    | expr op=('and'|'or') expr
+    | ';'
+    | '(' expr ')'
+    ;
 
 functionDecl
-    : 'func' IDENTIFIER '(' paramList? ')' '->' type block
+    : 'func' IDENTIFIER '(' paramList? ')' '->' Type block
     ;
 
 paramList
@@ -11,52 +30,40 @@ paramList
     ;
 
 parameter
-    : IDENTIFIER ':' type ('=' expr)?
+    : IDENTIFIER ':' Type ('=' expr)?
     ;
 
-type: 'int' | 'bool' | 'string';
+Type
+    : 'Int'
+    | 'Float'
+    | 'Bool'
+    | 'String'
+    | 'Void'
+    ;
 
-block: '{' statement* '}';
-
-statement
-    : varDecl ';'
-    | assignment ';'
-    | functionCall ';'
-    | returnStmt ';'
-    | ifStatement
-    | commentStmt
+block
+    : '{' expr* '}'
     ;
 
 varDecl
-    : 'let' IDENTIFIER ':' type ('=' expr)?
+    : 'let' IDENTIFIER ':' Type ('=' expr)?
     ;
 
 assignment
     : IDENTIFIER '=' expr
+    | IDENTIFIER assignOp expr
     ;
 
-ifStatement
+assignOp
+    : '+=' | '-=' | '*=' | '/='
+    ;
+
+ifExpr
     : 'if' '(' expr ')' block ('else' block)?
     ;
 
-returnStmt
-    : 'return' expr?
-    ;
-
-commentStmt
-    : SINGLE_LINE_COMMENT
-    | MULTI_LINE_COMMENT
-    ;
-
-expr
-    : functionCall
-    | primary
-    | '-' expr
-    | expr op=('*'|'/') expr
-    | expr op=('+'|'-') expr
-    | expr op=('>'|'<'|'>='|'<='|'=='|'!=') expr
-    | expr op=('and'|'or') expr
-    | '(' expr ')'
+typeCast
+    : Type '(' expr ')'
     ;
 
 functionCall
@@ -65,16 +72,17 @@ functionCall
 
 primary
     : INT
+    | FLOAT
     | BOOL
     | STRING
     | IDENTIFIER
     ;
 
-SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
-MULTI_LINE_COMMENT: '/*' .*? '*/' -> skip;
-
+FLOAT: '-'? [0-9]+ '.' [0-9]+;
 INT: '-'? [0-9]+;
 BOOL: 'true' | 'false';
 STRING: '"' (~["\r\n] | '\\"')* '"';
 IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
+SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
+MULTI_LINE_COMMENT: '/*' .*? '*/' -> skip;
 WS: [ \t\r\n]+ -> skip;

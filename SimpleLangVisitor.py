@@ -14,6 +14,11 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpleLangParser#expr.
+    def visitExpr(self, ctx:SimpleLangParser.ExprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpleLangParser#functionDecl.
     def visitFunctionDecl(self, ctx:SimpleLangParser.FunctionDeclContext):
         return self.visitChildren(ctx)
@@ -29,18 +34,8 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleLangParser#type.
-    def visitType(self, ctx:SimpleLangParser.TypeContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SimpleLangParser#block.
     def visitBlock(self, ctx:SimpleLangParser.BlockContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SimpleLangParser#statement.
-    def visitStatement(self, ctx:SimpleLangParser.StatementContext):
         return self.visitChildren(ctx)
 
 
@@ -54,23 +49,18 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleLangParser#ifStatement.
-    def visitIfStatement(self, ctx:SimpleLangParser.IfStatementContext):
+    # Visit a parse tree produced by SimpleLangParser#assignOp.
+    def visitAssignOp(self, ctx:SimpleLangParser.AssignOpContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleLangParser#returnStmt.
-    def visitReturnStmt(self, ctx:SimpleLangParser.ReturnStmtContext):
+    # Visit a parse tree produced by SimpleLangParser#ifExpr.
+    def visitIfExpr(self, ctx:SimpleLangParser.IfExprContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleLangParser#commentStmt.
-    def visitCommentStmt(self, ctx:SimpleLangParser.CommentStmtContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SimpleLangParser#expr.
-    def visitExpr(self, ctx:SimpleLangParser.ExprContext):
+    # Visit a parse tree produced by SimpleLangParser#typeCast.
+    def visitTypeCast(self, ctx:SimpleLangParser.TypeCastContext):
         return self.visitChildren(ctx)
 
 

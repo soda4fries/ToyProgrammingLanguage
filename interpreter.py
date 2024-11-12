@@ -1,9 +1,9 @@
 from antlr4 import *
-from SimpleLangLexer import SimpleLangLexer
-from SimpleLangParser import SimpleLangParser
-from SimpleLangVisitor import SimpleLangVisitor
-from typing import Dict, Any, List, Tuple, Callable, Union
+from typing import Dict, Any, List, Tuple, Union, Callable
 import operator
+from decimal import Decimal, ROUND_HALF_UP
+
+from SimpleLangVisitor import SimpleLangVisitor
 
 
 class Function:
@@ -21,36 +21,109 @@ class Function:
         self.env = env
         self.is_builtin = is_builtin
 
-class ReturnValue(Exception):
-    def __init__(self, value):
-        self.value = value
 
-
-class Interpreter(SimpleLangVisitor):
+class SimpleLangInterpreter(SimpleLangVisitor):
     def __init__(self):
         self.global_env = {}
         self.current_env = [self.global_env]
-
-       
+        
+        # Built-in functions
         self.global_env["print"] = Function(
-            [("value", "any", None)],
-            "void",
-            lambda args: print(args[0]),
+            [("value", "Any", None)],
+            "Void",
+            lambda args: (print(args[0]), None)[-1],
+            self.global_env,
+            is_builtin=True,
+        )
+        
+        
+        self.setup_builtin_functions()
+
+    def setup_builtin_functions(self):
+        # Math functions
+        self.global_env["abs"] = Function(
+            [("x", "Any", None)],
+            "Any",
+            lambda args: abs(args[0]),
+            self.global_env,
+            is_builtin=True,
+        )
+        
+        self.global_env["round"] = Function(
+            [("x", "Float", None), ("places", "Int", 0)],
+            "Float",
+            lambda args: float(Decimal(str(args[0])).quantize(
+                Decimal('0.' + '0' * args[1]),
+                rounding=ROUND_HALF_UP
+            )),
             self.global_env,
             is_builtin=True,
         )
 
+    def type_cast(self, value: Any, target_type: str) -> Any:
+        try:
+            if target_type == "Int":
+                if isinstance(value, bool):
+                    return 1 if value else 0
+                elif isinstance(value, str):
+                    if value.lower() == "true":
+                        return 1
+                    elif value.lower() == "false":
+                        return 0
+                    else:
+                        return int(float(value))
+                elif isinstance(value, float):
+                    return int(value)
+                return int(value)
+            
+            elif target_type == "Float":
+                if isinstance(value, bool):
+                    return 1.0 if value else 0.0
+                elif isinstance(value, str):
+                    if value.lower() == "true":
+                        return 1.0
+                    elif value.lower() == "false":
+                        return 0.0
+                    else:
+                        return float(value)
+                return float(value)
+            
+            elif target_type == "Bool":
+                if isinstance(value, str):
+                    return value.lower() == "true"
+                return bool(value)
+            
+            elif target_type == "String":
+                if isinstance(value, float):
+                    return f"{value:g}"
+                return str(value)
+            
+            else:
+                raise Exception(f"Unsupported type cast to {target_type}")
+        except ValueError:
+            raise Exception(f"Cannot cast {value} to {target_type}")
+
     def get_var(self, name: str) -> Any:
-        
         for env in reversed(self.current_env):
             if name in env:
                 return env[name]
         raise Exception(f"Variable or function '{name}' not defined")
 
     def visitProgram(self, ctx):
-        for child in ctx.children:
-            if child is not None and not isinstance(child, TerminalNode):
-                self.visit(child)
+        last_value = None
+        for expr in ctx.expr():
+            last_value = self.visit(expr)
+        return last_value
+
+    def visitBlock(self, ctx):
+        last_value = None
+        self.current_env.append({})
+        try:
+            for expr in ctx.expr():
+                last_value = self.visit(expr)
+            return last_value
+        finally:
+            self.current_env.pop()
 
     def visitFunctionDecl(self, ctx):
         name = ctx.IDENTIFIER().getText()
@@ -58,24 +131,19 @@ class Interpreter(SimpleLangVisitor):
         if ctx.paramList():
             for param in ctx.paramList().parameter():
                 param_name = param.IDENTIFIER().getText()
-                param_type = param.type_().getText()
+                param_type = param.Type().getText()
                 default_value = None
                 if param.expr():
                     default_value = self.visit(param.expr())
                 params.append((param_name, param_type, default_value))
-        return_type = ctx.type_().getText()
-
         
-        self.global_env[name] = Function(
-            params, return_type, ctx.block(), self.global_env
-        )
+        func = Function(params, ctx.Type().getText(), ctx.block(), dict(self.current_env[-1]))
+        self.current_env[-1][name] = func
+        return func
 
     def visitFunctionCall(self, ctx):
         name = ctx.IDENTIFIER().getText()
-        try:
-            func = self.get_var(name)
-        except Exception as e:
-            raise Exception(f"Function {name} not defined")
+        func = self.get_var(name)
 
         args = []
         if ctx.expr():
@@ -91,72 +159,84 @@ class Interpreter(SimpleLangVisitor):
             args.append(default_value)
 
         if func.is_builtin:
-
             return func.block(args)
         else:
-
             new_env = dict(func.env)
-            for (param_name, param_type, _), arg in zip(func.params, args):
+            for (param_name, _, _), arg in zip(func.params, args):
                 new_env[param_name] = arg
             self.current_env.append(new_env)
-            # funny
             try:
-                self.visit(func.block)
-                return_value = None
-            except ReturnValue as ret:
-                return_value = ret.value
+                return self.visit(func.block)
             finally:
                 self.current_env.pop()
 
-            return return_value
-
-    def visitBlock(self, ctx):
-        for stmt in ctx.statement():
-            self.visit(stmt)
-
     def visitVarDecl(self, ctx):
         name = ctx.IDENTIFIER().getText()
-        var_type = ctx.type_().getText()
+        value = None
         if ctx.expr():
             value = self.visit(ctx.expr())
-            self.current_env[-1][name] = value
+        self.current_env[-1][name] = value
+        return value
 
     def visitAssignment(self, ctx):
         name = ctx.IDENTIFIER().getText()
         value = self.visit(ctx.expr())
-
+        
+        if ctx.assignOp():
+            current_value = self.get_var(name)
+            op = ctx.assignOp().getText()
+            ops = {
+                "+=": operator.add,
+                "-=": operator.sub,
+                "*=": operator.mul,
+                "/=": operator.truediv,
+            }
+            value = ops[op](current_value, value)
+            
         for env in reversed(self.current_env):
             if name in env:
                 env[name] = value
-                return
+                return value
+        
         self.current_env[-1][name] = value
+        return value
 
-    def visitIfStatement(self, ctx):
+    def visitIfExpr(self, ctx):
         condition = self.visit(ctx.expr())
         if condition:
-            self.visit(ctx.block(0))
+            return self.visit(ctx.block(0))
         elif len(ctx.block()) > 1:
-            self.visit(ctx.block(1))
+            return self.visit(ctx.block(1))
+        return None
 
-    def visitReturnStmt(self, ctx):
-        value = None
-        if ctx.expr():
-            value = self.visit(ctx.expr())
-        raise ReturnValue(value)
+    def visitTypeCast(self, ctx):
+        value = self.visit(ctx.expr())
+        target_type = ctx.Type().getText()
+        return self.type_cast(value, target_type)
 
     def visitExpr(self, ctx):
         if len(ctx.children) == 1:
             return self.visit(ctx.children[0])
         elif len(ctx.children) == 2:
-            # Unary minus operation
-            if ctx.children[0].getText() == "-":
+            op = ctx.children[0].getText()
+            if op == "-":
                 value = self.visit(ctx.expr(0))
                 return -value
+            elif op == "not":
+                value = self.visit(ctx.expr(0))
+                return not value
         elif len(ctx.children) == 3:
             if ctx.expr(0):
                 left = self.visit(ctx.expr(0))
                 right = self.visit(ctx.expr(1))
                 op = ctx.op.text
+
+                # Handle type promotion
+                if (isinstance(left, (int, float)) and 
+                    isinstance(right, (int, float))):
+                    if isinstance(left, float) or isinstance(right, float):
+                        left = float(left)
+                        right = float(right)
 
                 ops = {
                     "+": operator.add,
@@ -172,7 +252,6 @@ class Interpreter(SimpleLangVisitor):
                     "and": lambda x, y: x and y,
                     "or": lambda x, y: x or y,
                 }
-
                 return ops[op](left, right)
             else:
                 return self.visit(ctx.expr(0))
@@ -180,10 +259,11 @@ class Interpreter(SimpleLangVisitor):
     def visitPrimary(self, ctx):
         if ctx.INT():
             return int(ctx.INT().getText())
+        elif ctx.FLOAT():
+            return float(ctx.FLOAT().getText())
         elif ctx.BOOL():
             return ctx.BOOL().getText() == "true"
         elif ctx.STRING():
             return ctx.STRING().getText()[1:-1]
         elif ctx.IDENTIFIER():
-            name = ctx.IDENTIFIER().getText()
-            return self.get_var(name)
+            return self.get_var(ctx.IDENTIFIER().getText())
