@@ -14,34 +14,43 @@ parameter
     : IDENTIFIER ':' type ('=' expr)?
     ;
 
-type: 'int' | 'bool' | 'string';
+type: 'int' | 'bool' | 'string' | arrayType | listType;
 
-block: '{' statement* '}';
+arrayType: 'array' '<' type '>' ;
+listType: 'list' '<' type '>' ;
+
+block: '{' statement* '}' ;
 
 statement
-    : varDecl ';'
-    | assignment ';'
+    : varDecl 
+    | assignment 
     | functionCall ';'
-    | returnStmt ';'
+    | returnStmt 
     | ifStatement
     | commentStmt
+    | arrayOp 
+    | listOp 
+    | whileStatement
+    | block
     ;
 
-varDecl
-    : 'let' IDENTIFIER ':' type ('=' expr)?
-    ;
+varDecl: 'let' IDENTIFIER ':' type ('=' expr)? ';' ;
 
-assignment
-    : IDENTIFIER '=' expr
-    ;
+assignment: IDENTIFIER ('['expr']')? '=' expr ';' ;
+
+arrayOp: IDENTIFIER '.' ('sort' '(' ')') ';' ;
+
+listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ')') ';' ;
 
 ifStatement
     : 'if' '(' expr ')' block ('else' block)?
     ;
 
-returnStmt
-    : 'return' expr?
+whileStatement
+    : 'while' '(' expr ')' block
     ;
+
+returnStmt: 'return' expr? ';' ;
 
 commentStmt
     : SINGLE_LINE_COMMENT
@@ -52,16 +61,16 @@ expr
     : functionCall
     | primary
     | '-' expr
+    | expr '[' expr ']'
     | expr op=('*'|'/') expr
     | expr op=('+'|'-') expr
     | expr op=('>'|'<'|'>='|'<='|'=='|'!=') expr
     | expr op=('and'|'or') expr
+    | '[' (expr (',' expr)*)? ']'
     | '(' expr ')'
     ;
 
-functionCall
-    : IDENTIFIER '(' (expr (',' expr)*)? ')'
-    ;
+functionCall: IDENTIFIER '(' (expr (',' expr)*)? ')' ;
 
 primary
     : INT

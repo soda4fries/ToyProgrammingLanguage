@@ -1,189 +1,255 @@
 from antlr4 import *
-from SimpleLangLexer import SimpleLangLexer
-from SimpleLangParser import SimpleLangParser
 from SimpleLangVisitor import SimpleLangVisitor
-from typing import Dict, Any, List, Tuple, Callable, Union
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from enum import Enum, auto
 import operator
 
+class Type(Enum):
+    INT = auto()
+    BOOL = auto()
+    STRING = auto()
+    ARRAY = auto()
+    LIST = auto()
 
+@dataclass
+class ArrayType:
+    element_type: Type
+
+@dataclass
+class ListType:
+    element_type: Type
+
+@dataclass
 class Function:
-    def __init__(
-        self,
-        params: List[Tuple[str, str, Any]],
-        return_type: str,
-        block: Union[Any, Callable],
-        env: Dict[str, Any],
-        is_builtin: bool = False,
-    ):
-        self.params = params  # [(name, type, default_value), ...]
-        self.return_type = return_type
-        self.block = block
-        self.env = env
-        self.is_builtin = is_builtin
+    params: List[tuple]
+    return_type: Type
+    body: Any
+    env: 'Environment'
 
-class ReturnValue(Exception):
+class ReturnValue:
     def __init__(self, value):
         self.value = value
 
+class Environment:
+    def __init__(self, parent=None):
+        self.values: Dict[str, Any] = {}
+        self.parent = parent
+
+    def define(self, name: str, value: Any):
+        self.values[name] = value
+
+    def get(self, name: str) -> Any:
+        if name in self.values:
+            return self.values[name]
+        if self.parent:
+            return self.parent.get(name)
+        raise NameError(f"Variable '{name}' is not defined")
+
+    def assign(self, name: str, value: Any):
+        if name in self.values:
+            self.values[name] = value
+            return
+        if self.parent:
+            self.parent.assign(name, value)
+            return
+        raise NameError(f"Variable '{name}' is not defined")
 
 class Interpreter(SimpleLangVisitor):
     def __init__(self):
-        self.global_env = {}
-        self.current_env = [self.global_env]
-
-       
-        self.global_env["print"] = Function(
-            [("value", "any", None)],
-            "void",
-            lambda args: print(args[0]),
-            self.global_env,
-            is_builtin=True,
-        )
-
-    def get_var(self, name: str) -> Any:
+        self.global_env = Environment()
+        self.current_env = self.global_env
         
-        for env in reversed(self.current_env):
-            if name in env:
-                return env[name]
-        raise Exception(f"Variable or function '{name}' not defined")
+        # Add built-in functions
+        self.global_env.define('print', print)
+        self.global_env.define('len', len)
 
     def visitProgram(self, ctx):
-        for child in ctx.children:
-            if child is not None and not isinstance(child, TerminalNode):
-                self.visit(child)
+        for child in ctx.children[:-1]:  # Skip EOF
+            self.visit(child)
 
     def visitFunctionDecl(self, ctx):
         name = ctx.IDENTIFIER().getText()
         params = []
         if ctx.paramList():
-            for param in ctx.paramList().parameter():
-                param_name = param.IDENTIFIER().getText()
-                param_type = param.type_().getText()
-                default_value = None
-                if param.expr():
-                    default_value = self.visit(param.expr())
-                params.append((param_name, param_type, default_value))
-        return_type = ctx.type_().getText()
-
+            params = self.visit(ctx.paramList())
+        return_type = self.visit(ctx.type_())
         
-        self.global_env[name] = Function(
-            params, return_type, ctx.block(), self.global_env
+        function = Function(
+            params=params,
+            return_type=return_type,
+            body=ctx.block(),
+            env=self.current_env
         )
+        self.current_env.define(name, function)
 
-    def visitFunctionCall(self, ctx):
+    def visitParamList(self, ctx):
+        return [self.visit(param) for param in ctx.parameter()]
+
+    def visitParameter(self, ctx):
         name = ctx.IDENTIFIER().getText()
-        try:
-            func = self.get_var(name)
-        except Exception as e:
-            raise Exception(f"Function {name} not defined")
-
-        args = []
+        param_type = self.visit(ctx.type_())
+        default_value = None
         if ctx.expr():
-            args = [self.visit(expr) for expr in ctx.expr()]
+            default_value = self.visit(ctx.expr())
+        return (name, param_type, default_value)
 
-        if len(args) > len(func.params):
-            raise Exception(f"Too many arguments for function {name}")
-
-        while len(args) < len(func.params):
-            default_value = func.params[len(args)][2]
-            if default_value is None:
-                raise Exception(f"Missing required argument for function {name}")
-            args.append(default_value)
-
-        if func.is_builtin:
-
-            return func.block(args)
-        else:
-
-            new_env = dict(func.env)
-            for (param_name, param_type, _), arg in zip(func.params, args):
-                new_env[param_name] = arg
-            self.current_env.append(new_env)
-            # funny
-            try:
-                self.visit(func.block)
-                return_value = None
-            except ReturnValue as ret:
-                return_value = ret.value
-            finally:
-                self.current_env.pop()
-
-            return return_value
-
-    def visitBlock(self, ctx):
-        for stmt in ctx.statement():
-            self.visit(stmt)
+    def visitType(self, ctx):
+        type_text = ctx.getText()
+        if type_text == 'int':
+            return Type.INT
+        elif type_text == 'bool':
+            return Type.BOOL
+        elif type_text == 'string':
+            return Type.STRING
+        elif ctx.arrayType():
+            return ArrayType(self.visit(ctx.arrayType().type_()))
+        elif ctx.listType():
+            return ListType(self.visit(ctx.listType().type_()))
 
     def visitVarDecl(self, ctx):
         name = ctx.IDENTIFIER().getText()
-        var_type = ctx.type_().getText()
+        var_type = self.visit(ctx.type_())
+        value = None
         if ctx.expr():
             value = self.visit(ctx.expr())
-            self.current_env[-1][name] = value
+        self.current_env.define(name, value)
 
     def visitAssignment(self, ctx):
         name = ctx.IDENTIFIER().getText()
-        value = self.visit(ctx.expr())
+        exprs = ctx.expr()
+        if len(exprs) > 1:  # Array/List indexing
+            container = self.current_env.get(name)
+            index = self.visit(exprs[0])
+            value = self.visit(exprs[1])
+            container[index] = value
+        else:
+            value = self.visit(exprs[0])
+            self.current_env.assign(name, value)
 
-        for env in reversed(self.current_env):
-            if name in env:
-                env[name] = value
-                return
-        self.current_env[-1][name] = value
+    def visitArrayOp(self, ctx):
+        array_name = ctx.IDENTIFIER().getText()
+        array = self.current_env.get(array_name)
+        if 'sort' in ctx.getText():
+            array.sort()
+
+    def visitListOp(self, ctx):
+        list_name = ctx.IDENTIFIER().getText()
+        lst = self.current_env.get(list_name)
+        op_text = ctx.getText()
+        
+        if 'append' in op_text:
+            value = self.visit(ctx.expr())
+            lst.append(value)
+        elif 'remove' in op_text:
+            value = self.visit(ctx.expr())
+            lst.remove(value)
+        elif 'sort' in op_text:
+            lst.sort()
 
     def visitIfStatement(self, ctx):
         condition = self.visit(ctx.expr())
         if condition:
-            self.visit(ctx.block(0))
-        elif len(ctx.block()) > 1:
-            self.visit(ctx.block(1))
+            result = self.visit(ctx.block(0))
+            if isinstance(result, ReturnValue):
+                return result
+        elif ctx.block(1):
+            result = self.visit(ctx.block(1))
+            if isinstance(result, ReturnValue):
+                return result
+
+    def visitWhileStatement(self, ctx):
+        while self.visit(ctx.expr()):
+            result = self.visit(ctx.block())
+            if isinstance(result, ReturnValue):
+                return result
+
+    def visitBlock(self, ctx):
+        previous_env = self.current_env
+        self.current_env = Environment(previous_env)
+        
+        for stmt in ctx.statement():
+            result = self.visit(stmt)
+            if isinstance(result, ReturnValue):
+                self.current_env = previous_env
+                return result
+            
+        self.current_env = previous_env
 
     def visitReturnStmt(self, ctx):
         value = None
         if ctx.expr():
             value = self.visit(ctx.expr())
-        raise ReturnValue(value)
+        return ReturnValue(value)
 
     def visitExpr(self, ctx):
-        if len(ctx.children) == 1:
-            return self.visit(ctx.children[0])
-        elif len(ctx.children) == 2:
-            # Unary minus operation
-            if ctx.children[0].getText() == "-":
-                value = self.visit(ctx.expr(0))
-                return -value
-        elif len(ctx.children) == 3:
-            if ctx.expr(0):
-                left = self.visit(ctx.expr(0))
-                right = self.visit(ctx.expr(1))
-                op = ctx.op.text
+        if ctx.primary():
+            return self.visit(ctx.primary())
+        elif ctx.functionCall():
+            return self.visit(ctx.functionCall())
+        elif ctx.getChildCount() == 2 and ctx.getChild(0).getText() == '-':
+            return -self.visit(ctx.expr(0))
+        elif ctx.getChild(0).getText() == '[':  # Array/List literal
+            exprs = ctx.expr()
+            return [self.visit(e) for e in exprs]
+        elif ctx.getChildCount() == 4 and ctx.getChild(1).getText() == '[':  # Array/List indexing
+            container = self.visit(ctx.expr(0))
+            index = self.visit(ctx.expr(1))
+            return container[index]
+        elif ctx.op:  # Binary operation
+            left = self.visit(ctx.expr(0))
+            right = self.visit(ctx.expr(1))
+            op = ctx.op.text
+            
+            ops = {
+                '*': operator.mul,
+                '/': operator.truediv,
+                '+': operator.add,
+                '-': operator.sub,
+                '>': operator.gt,
+                '<': operator.lt,
+                '>=': operator.ge,
+                '<=': operator.le,
+                '==': operator.eq,
+                '!=': operator.ne,
+                'and': operator.and_,
+                'or': operator.or_
+            }
+            return ops[op](left, right)
+        elif ctx.expr(0):  # Parentheses
+            return self.visit(ctx.expr(0))
 
-                ops = {
-                    "+": operator.add,
-                    "-": operator.sub,
-                    "*": operator.mul,
-                    "/": operator.truediv,
-                    ">": operator.gt,
-                    "<": operator.lt,
-                    ">=": operator.ge,
-                    "<=": operator.le,
-                    "==": operator.eq,
-                    "!=": operator.ne,
-                    "and": lambda x, y: x and y,
-                    "or": lambda x, y: x or y,
-                }
-
-                return ops[op](left, right)
-            else:
-                return self.visit(ctx.expr(0))
+    def visitFunctionCall(self, ctx):
+        name = ctx.IDENTIFIER().getText()
+        function = self.current_env.get(name)
+        
+        args = []
+        if ctx.expr():
+            args = [self.visit(expr) for expr in ctx.expr()]
+            
+        if isinstance(function, Function):
+            previous_env = self.current_env
+            self.current_env = Environment(function.env)
+            
+            # Bind parameters to arguments
+            for (param_name, param_type, default_value), arg in zip(function.params, args):
+                self.current_env.define(param_name, arg)
+                
+            result = self.visit(function.body)
+            self.current_env = previous_env
+            
+            if isinstance(result, ReturnValue):
+                return result.value
+            return result
+        else:  # Built-in function
+            return function(*args)
 
     def visitPrimary(self, ctx):
         if ctx.INT():
             return int(ctx.INT().getText())
         elif ctx.BOOL():
-            return ctx.BOOL().getText() == "true"
+            return ctx.BOOL().getText() == 'true'
         elif ctx.STRING():
-            return ctx.STRING().getText()[1:-1]
+            return ctx.STRING().getText()[1:-1]  # Remove quotes
         elif ctx.IDENTIFIER():
-            name = ctx.IDENTIFIER().getText()
-            return self.get_var(name)
+            return self.current_env.get(ctx.IDENTIFIER().getText())

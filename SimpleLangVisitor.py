@@ -34,6 +34,16 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpleLangParser#arrayType.
+    def visitArrayType(self, ctx:SimpleLangParser.ArrayTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpleLangParser#listType.
+    def visitListType(self, ctx:SimpleLangParser.ListTypeContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpleLangParser#block.
     def visitBlock(self, ctx:SimpleLangParser.BlockContext):
         return self.visitChildren(ctx)
@@ -54,8 +64,23 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpleLangParser#arrayOp.
+    def visitArrayOp(self, ctx:SimpleLangParser.ArrayOpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpleLangParser#listOp.
+    def visitListOp(self, ctx:SimpleLangParser.ListOpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpleLangParser#ifStatement.
     def visitIfStatement(self, ctx:SimpleLangParser.IfStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpleLangParser#whileStatement.
+    def visitWhileStatement(self, ctx:SimpleLangParser.WhileStatementContext):
         return self.visitChildren(ctx)
 
 
