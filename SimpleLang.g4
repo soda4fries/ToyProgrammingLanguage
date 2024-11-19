@@ -14,7 +14,7 @@ parameter
     : IDENTIFIER ':' type ('=' expr)?
     ;
 
-type: 'int' | 'bool' | 'string' | arrayType | listType;
+type: 'int' | 'bool' | 'string' | 'float' | arrayType | listType;
 
 arrayType: 'array' '<' type '>' ;
 listType: 'list' '<' type '>' ;
@@ -74,6 +74,7 @@ functionCall: IDENTIFIER '(' (expr (',' expr)*)? ')' ;
 
 primary
     : INT
+    | FLOAT
     | BOOL
     | STRING
     | IDENTIFIER
@@ -83,6 +84,7 @@ SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
 MULTI_LINE_COMMENT: '/*' .*? '*/' -> skip;
 
 INT: '-'? [0-9]+;
+FLOAT: '-'? [0-9]+ '.' [0-9]+;
 BOOL: 'true' | 'false';
 STRING: '"' (~["\r\n] | '\\"')* '"';
 IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;

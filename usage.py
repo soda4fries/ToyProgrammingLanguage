@@ -59,6 +59,31 @@ while (i < 5) {
     print(i);
     i = i + 1;
 }
+
+// Test float variable declaration and arithmetic
+let a: float = 3.14;
+print(a); // 3.14
+
+// Float arithmetic
+let b: float = 2.5;
+print(b); // 2.5
+let c: float = a + b;
+print(c); // 5.64
+c = a * b;
+print(c); // 7.85
+
+// Mixed-type arithmetic (int and float)
+let d: int = 10;
+let e: float = d * a;
+print(e); // 31.4
+
+// Float comparison
+let isGreater: bool = a > b;
+print(isGreater); // true
+
+// Default float value
+let f: float;
+print(f); // 0.0
 """
 
 if __name__ == "__main__":

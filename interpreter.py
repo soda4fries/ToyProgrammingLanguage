@@ -7,6 +7,7 @@ import operator
 
 class Type(Enum):
     INT = auto()
+    FLOAT = auto()
     BOOL = auto()
     STRING = auto()
     ARRAY = auto()
@@ -102,6 +103,8 @@ class Interpreter(SimpleLangVisitor):
             return Type.BOOL
         elif type_text == 'string':
             return Type.STRING
+        elif type_text == 'float':
+            return Type.FLOAT
         elif ctx.arrayType():
             return ArrayType(self.visit(ctx.arrayType().type_()))
         elif ctx.listType():
@@ -111,8 +114,21 @@ class Interpreter(SimpleLangVisitor):
         name = ctx.IDENTIFIER().getText()
         var_type = self.visit(ctx.type_())
         value = None
+
         if ctx.expr():
             value = self.visit(ctx.expr())
+        else:
+            if var_type == Type.FLOAT:
+                value = 0.0
+            elif var_type == Type.INT:
+                value = 0
+            elif var_type == Type.BOOL:
+                value = False
+            elif var_type == Type.STRING:
+                value = ""
+            elif isinstance(var_type, (ArrayType, ListType)):
+                value = []
+                
         self.current_env.define(name, value)
 
     def visitAssignment(self, ctx):
@@ -200,22 +216,25 @@ class Interpreter(SimpleLangVisitor):
             left = self.visit(ctx.expr(0))
             right = self.visit(ctx.expr(1))
             op = ctx.op.text
-            
-            ops = {
-                '*': operator.mul,
-                '/': operator.truediv,
-                '+': operator.add,
-                '-': operator.sub,
-                '>': operator.gt,
-                '<': operator.lt,
-                '>=': operator.ge,
-                '<=': operator.le,
-                '==': operator.eq,
-                '!=': operator.ne,
-                'and': operator.and_,
-                'or': operator.or_
-            }
-            return ops[op](left, right)
+
+            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                ops = {
+                    '*': operator.mul,
+                    '/': operator.truediv,
+                    '+': operator.add,
+                    '-': operator.sub,
+                    '>': operator.gt,
+                    '<': operator.lt,
+                    '>=': operator.ge,
+                    '<=': operator.le,
+                    '==': operator.eq,
+                    '!=': operator.ne,
+                    'and': operator.and_,
+                    'or': operator.or_
+                }
+                return ops[op](left, right)
+            else:
+                raise TypeError(f"Unsupported operation between {type(left)} and {type(right)}")
         elif ctx.expr(0):  # Parentheses
             return self.visit(ctx.expr(0))
 
@@ -247,6 +266,8 @@ class Interpreter(SimpleLangVisitor):
     def visitPrimary(self, ctx):
         if ctx.INT():
             return int(ctx.INT().getText())
+        elif ctx.FLOAT():
+            return float(ctx.FLOAT().getText())
         elif ctx.BOOL():
             return ctx.BOOL().getText() == 'true'
         elif ctx.STRING():
