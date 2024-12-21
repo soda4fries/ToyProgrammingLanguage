@@ -1,0 +1,35 @@
+// Multi-dimensional array example
+let matrix: array<array<int>> = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+print(matrix[0][1]);  // Prints 2
+
+let cube: array<array<array<int>>> = [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]]
+];
+print(cube[1][0][1]);  // Prints 6
+
+// Musical array example
+let melody: array<int> = [60, 62, 64, 65, 67, 69, 71, 72];
+melody.play();  // Plays the melody
+
+// Machine Learning example
+let model: ml_model = LinearRegression();
+let X: array<array<float>> = [[1.0, 2.0], [2.0, 4.0], [3.0, 6.0]];
+let y: array<float> = [3.0, 6.0, 9.0];
+model.fit(X, y);
+
+// Make predictions
+let test_data: array<array<float>> = [[4.0, 8.0]];
+let predictions = model.predict(test_data);
+print(predictions);  // Should print something close to [12.0]
+
+// Decision Tree example
+let classifier: ml_model = DecisionTree();
+let X_class: array<array<float>> = [[1.0, 2.0], [2.0, 4.0], [3.0, 6.0], [4.0, 8.0]];
+let y_class: array<int> = [0, 0, 1, 1];
+classifier.fit(X_class, y_class);
+
+// Test classification
+let test_point: array<array<float>> = [[3.5, 7.0]];
+let class_prediction = classifier.predict(test_point);
+print(class_prediction);  // Should print [1]

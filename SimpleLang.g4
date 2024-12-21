@@ -38,7 +38,15 @@ varDecl: 'let' IDENTIFIER ':' type ('=' expr)? ';' ;
 
 assignment: IDENTIFIER ('['expr']')? '=' expr ';' ;
 
-arrayOp: IDENTIFIER '.' ('sort' '(' ')') ';' ;
+arrayOp: IDENTIFIER '.' (
+    'sort' '(' ')' |
+    'mean' '(' ')' |
+    'median' '(' ')' |
+    'variance' '(' ')' |
+    'stddev' '(' ')' |
+    'play' '(' ')' |
+    'linreg' '(' expr ')'
+) ';' ;
 
 listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ')') ';' ;
 
