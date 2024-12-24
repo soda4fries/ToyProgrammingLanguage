@@ -69,6 +69,20 @@ match arr {
     case _ => print("Array does not match");
 }
 
+// Array rotation and shifting
+let nums: array<int> = [1, 2, 3, 4, 5];
+nums.rotate(1);
+print("Rotated Array (by 1):", nums_rotate);
+
+nums.rotate(2);
+print("Rotated Array (by 2):", nums_rotate);
+
+nums.rotate(3);
+print("Rotated Array (by 3):", nums_rotate);
+
+nums.shift(2);
+print("Shifted Array (by 2):", nums_shift);
+
 // "Mary Had a Little Lamb" (complete)
 let melody1: array<float> = [3,2,1,2,3,3,3, 2,2,2, 3,5,5, 3,2,1,2,3,3,3, 3,2,2,3,2,1];
 print("Playing Mary Had a Little Lamb...");

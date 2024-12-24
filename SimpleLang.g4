@@ -47,7 +47,9 @@ arrayOp: IDENTIFIER '.' (
     'variance' '(' ')' |
     'stddev' '(' ')' |
     'play' '(' ')' |
-    'linreg' '(' expr ')'
+    'linreg' '(' expr ')' |
+    'rotate' '(' expr ')' |
+    'shift' '(' expr ')'
 ) ';' ;
 
 listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ')') ';' ;

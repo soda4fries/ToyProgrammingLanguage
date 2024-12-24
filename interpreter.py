@@ -324,13 +324,36 @@ class Interpreter(SimpleLangVisitor):
         elif "linreg" in op_text:
             y_array = self.visit(ctx.expr())
             result = StatisticalFunctions.linear_regression(array, y_array)
-
             # Define before assign
             self.current_env.define(array_name + "_slope", result["slope"])
             self.current_env.define(array_name + "_intercept", result["intercept"])
             self.current_env.define(array_name + "_r_squared", result["r_squared"])
-
             return result
+        elif "rotate" in op_text:
+            positions_expr = ctx.expr()
+            if not positions_expr:
+                raise ValueError("Missing number of positions for rotate operation")
+            positions = int(self.visit(positions_expr))
+            rotated_array = array[-positions:] + array[:-positions]
+            result_var = array_name + "_rotate"
+            self.current_env.define(result_var, rotated_array)
+            return rotated_array
+        elif "shift" in op_text:
+            positions_expr = ctx.expr()
+            if not positions_expr:
+                raise ValueError("Missing number of positions for shift operation")
+            positions = int(self.visit(positions_expr))
+            
+            if positions == 0:
+                shifted_array = array[:]
+            else:
+                positions = positions % len(array)
+                shifted_array = [0] * positions + array[:len(array) - positions]
+            
+            result_var = array_name + "_shift"
+            self.current_env.define(result_var, shifted_array)
+            return shifted_array
+
 
     def visitListOp(self, ctx):
         list_name = ctx.IDENTIFIER().getText()
@@ -387,11 +410,11 @@ class Interpreter(SimpleLangVisitor):
             return result
         
     def visitMatchStatement(self, ctx):
-        value = self.visit(ctx.expr())  # Evaluate the match expression
+        value = self.visit(ctx.expr())
         for case in ctx.matchCase():
-            pattern = self.visit(case.pattern())  # Evaluate the pattern
+            pattern = self.visit(case.pattern())
             if self._match_pattern(value, pattern):
-                return self.visit(case.statement())  # Execute the case's statement
+                return self.visit(case.statement())
         raise ValueError(f"No matching pattern for value: {value}")
 
     def _match_pattern(self, value, pattern):
@@ -401,13 +424,6 @@ class Interpreter(SimpleLangVisitor):
             if not isinstance(value, list) or len(value) != len(pattern):
                 return False
             return all(self._match_pattern(v, p) for v, p in zip(value, pattern))
-        if isinstance(pattern, dict):  # Object pattern matching
-            if not isinstance(value, dict):
-                return False
-            for key, p in pattern.items():
-                if key not in value or not self._match_pattern(value[key], p):
-                    return False
-            return True
         return value == pattern  # Exact match
 
     def visitMatchCase(self, ctx):
