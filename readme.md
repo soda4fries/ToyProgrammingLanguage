@@ -1,22 +1,25 @@
-install antler python runtime
+##Setup for the program
+
+install antlr python runtime
 
 ```
 pip install antlr4-python3-runtime==4.13.0
 ```
 
-generate antler lexer and parser with visitor pattern (java must be installed). visitor is easier for expression, return values, and functional things kinda
+generate antlr lexer and parser with visitor pattern (java must be installed). visitor is easier for expression, return values, and functional things kinda
 
 ```
 java -jar antlr.jar -Dlanguage=Python3 -visitor SimpleLang.g4
 ```
 
+!!!NOTES!!!
 only the interpreter.py SimpleLang.g4, usage.py are not auto-generated. Rest can be deleted if buggy
 
+##Information about the program
 
 Three primitive types - int, bool, string with static typing
 
 Variable declarations (let), assignments, if/else control flow, returns, and function calls
-
 
 Arithmetic (+,-,*,/), comparisons (>,<,>=,<=,==,!=), logical (and,or), parentheses grouping
 
@@ -24,15 +27,23 @@ Defined with 'func', support parameters with default values, explicit return typ
 
 Lexical scoping with global and local environments, variables must be declared before use
 
-Supports both single-line (//) and multi-line (/* */) comments
-
-negative number handling a bit bad.
-
-need to add type checking but will crash since python will not execute using wrong type (maybe)
+Supports both single-line (//) and multi-line (/* */) comment
 
 uses exceptions to get return value 
 
-Example Syntax:
+##How to run this program
+
+1. Open terminal
+2. Go to the path of the program
+   ```
+    cd <pathname>
+   ```
+3. Run the run.py file by passing the filename of the .txt
+   ```
+    python run.py <filename>.txt
+   ```
+
+##Example Syntax:
 
 ```
 // Function with type and default parameter
