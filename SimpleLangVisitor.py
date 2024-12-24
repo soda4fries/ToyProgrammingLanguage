@@ -79,6 +79,21 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpleLangParser#matchStatement.
+    def visitMatchStatement(self, ctx:SimpleLangParser.MatchStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpleLangParser#matchCase.
+    def visitMatchCase(self, ctx:SimpleLangParser.MatchCaseContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpleLangParser#pattern.
+    def visitPattern(self, ctx:SimpleLangParser.PatternContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpleLangParser#ifStatement.
     def visitIfStatement(self, ctx:SimpleLangParser.IfStatementContext):
         return self.visitChildren(ctx)

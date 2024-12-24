@@ -33,6 +33,7 @@ statement
     | matrixOp 
     | whileStatement
     | block
+    | matchStatement
     ;
 
 varDecl: 'let' IDENTIFIER ':' type ('=' expr)? ';' ;
@@ -53,6 +54,25 @@ listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '
 
 matrixOp
     : IDENTIFIER '.' ('add' '(' expr ')' | 'multiply' '(' expr ')' | 'invert' '(' ')' | 'transpose' '(' ')') ';'
+    ;
+
+matchStatement
+    : 'match' expr '{' matchCase+ '}'
+    ;
+
+matchCase
+    : 'case' pattern '=>' statement
+    ;
+
+pattern
+    : INT
+    | FLOAT
+    | BOOL
+    | STRING
+    | IDENTIFIER
+    | '_'
+    | '[' pattern (',' pattern)* ']'
+    | '{' IDENTIFIER ':' pattern (',' IDENTIFIER ':' pattern)* '}'
     ;
 
 ifStatement

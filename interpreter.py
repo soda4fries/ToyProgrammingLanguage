@@ -385,6 +385,58 @@ class Interpreter(SimpleLangVisitor):
             result_var = matrix_name + "_transpose"
             self.current_env.define(result_var, result)
             return result
+        
+    def visitMatchStatement(self, ctx):
+        value = self.visit(ctx.expr())  # Evaluate the match expression
+        for case in ctx.matchCase():
+            pattern = self.visit(case.pattern())  # Evaluate the pattern
+            if self._match_pattern(value, pattern):
+                return self.visit(case.statement())  # Execute the case's statement
+        raise ValueError(f"No matching pattern for value: {value}")
+
+    def _match_pattern(self, value, pattern):
+        if pattern == "_":  # Wildcard matches anything
+            return True
+        if isinstance(pattern, list):  # Array pattern matching
+            if not isinstance(value, list) or len(value) != len(pattern):
+                return False
+            return all(self._match_pattern(v, p) for v, p in zip(value, pattern))
+        if isinstance(pattern, dict):  # Object pattern matching
+            if not isinstance(value, dict):
+                return False
+            for key, p in pattern.items():
+                if key not in value or not self._match_pattern(value[key], p):
+                    return False
+            return True
+        return value == pattern  # Exact match
+
+    def visitMatchCase(self, ctx):
+        pattern = self.visit(ctx.pattern())  # Visit pattern
+        statement = self.visit(ctx.statement())  # Visit statement
+        return {"pattern": pattern, "statement": statement}
+
+    def visitPattern(self, ctx):
+        if ctx.INT():
+            return int(ctx.INT().getText())
+        elif ctx.FLOAT():
+            return float(ctx.FLOAT().getText())
+        elif ctx.BOOL():
+            return ctx.BOOL().getText() == "true"
+        elif ctx.STRING():
+            return ctx.STRING().getText()[1:-1]  # Remove quotes
+        elif ctx.IDENTIFIER():
+            return ctx.IDENTIFIER().getText()  # Identifiers match variable values
+        elif ctx.getChild(0).getText() == "_":  # Wildcard
+            return "_"
+        elif ctx.getChild(0).getText() == "[":  # Array pattern
+            return [self.visit(child) for child in ctx.pattern()]
+        elif ctx.getChild(0).getText() == "{":  # Object pattern
+            obj_pattern = {}
+            for child in ctx.children[1:-1]:  # Skip '{' and '}'
+                key = child.IDENTIFIER().getText()
+                value = self.visit(child.pattern())
+                obj_pattern[key] = value
+            return obj_pattern
 
     def visitIfStatement(self, ctx):
         condition = self.visit(ctx.expr())

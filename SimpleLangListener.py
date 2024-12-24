@@ -134,6 +134,33 @@ class SimpleLangListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SimpleLangParser#matchStatement.
+    def enterMatchStatement(self, ctx:SimpleLangParser.MatchStatementContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#matchStatement.
+    def exitMatchStatement(self, ctx:SimpleLangParser.MatchStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#matchCase.
+    def enterMatchCase(self, ctx:SimpleLangParser.MatchCaseContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#matchCase.
+    def exitMatchCase(self, ctx:SimpleLangParser.MatchCaseContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#pattern.
+    def enterPattern(self, ctx:SimpleLangParser.PatternContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#pattern.
+    def exitPattern(self, ctx:SimpleLangParser.PatternContext):
+        pass
+
+
     # Enter a parse tree produced by SimpleLangParser#ifStatement.
     def enterIfStatement(self, ctx:SimpleLangParser.IfStatementContext):
         pass
