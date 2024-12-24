@@ -1,4 +1,4 @@
-##Setup for the program##
+## **Setup for the program**
 
 install antlr python runtime
 
@@ -31,7 +31,7 @@ Supports both single-line (//) and multi-line (/* */) comment
 
 uses exceptions to get return value 
 
-##How to run this program##
+## **How to run this program**
 
 1. Open terminal
 2. Go to the path of the program
@@ -43,7 +43,7 @@ uses exceptions to get return value
     python run.py <filename>.txt
    ```
 
-##Example Syntax:##
+## **Example Syntax:**
 
 ```
 // Function with type and default parameter
