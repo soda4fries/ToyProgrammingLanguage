@@ -1,4 +1,4 @@
-# Generated from ./SimpleLang.g4 by ANTLR 4.13.2
+# Generated from SimpleLang.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .SimpleLangParser import SimpleLangParser
@@ -71,6 +71,11 @@ class SimpleLangVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by SimpleLangParser#listOp.
     def visitListOp(self, ctx:SimpleLangParser.ListOpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpleLangParser#matrixOp.
+    def visitMatrixOp(self, ctx:SimpleLangParser.MatrixOpContext):
         return self.visitChildren(ctx)
 
 

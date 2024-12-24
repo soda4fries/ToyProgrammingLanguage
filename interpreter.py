@@ -150,21 +150,34 @@ class MusicPlayer:
     def _midi_context():
         """Context manager for MIDI resources"""
         pygame.midi.init()
-        try:
-            output_id = pygame.midi.get_default_output_id()
-            if output_id == -1:
-                raise ValueError("No MIDI output devices available")
-            player = pygame.midi.Output(output_id)
-            yield player
-        finally:
-            if "player" in locals():
-                player.close()
-            pygame.midi.quit()
+
+        print("Available MIDI devices:")
+        for i in range(pygame.midi.get_count()):
+            info = pygame.midi.get_device_info(i)
+            print(f"Device {i}: {info}")
+
+        output_id = pygame.midi.get_default_output_id()
+
+        if output_id == -1: 
+            print("Warning: No MIDI output devices available")
+            yield None 
+        else:
+            try:
+                player = pygame.midi.Output(output_id)
+                yield player  
+            finally:
+                if 'player' in locals(): 
+                    player.close()
+
+        pygame.midi.quit()
 
     @classmethod
     def play(cls, values):
         """Static method to play array of values with a single random instrument"""
         with cls._midi_context() as player:
+            if player is None: 
+                print("Skipping MIDI playback: No output device available")
+                return
 
             instrument = random.choice(cls.INSTRUMENTS)
             player.set_instrument(instrument)
@@ -242,6 +255,10 @@ class Interpreter(SimpleLangVisitor):
 
         if ctx.expr():
             value = self.visit(ctx.expr())
+            if isinstance(var_type, ArrayType) and var_type.element_type == ArrayType(Type.FLOAT):
+                value = np.array(value)
+            elif isinstance(var_type, ArrayType) and var_type.element_type == Type.FLOAT:
+                value = np.array(value)
         else:
             if var_type == Type.FLOAT:
                 value = 0.0
@@ -251,7 +268,14 @@ class Interpreter(SimpleLangVisitor):
                 value = False
             elif var_type == Type.STRING:
                 value = ""
-            elif isinstance(var_type, (ArrayType, ListType)):
+            elif isinstance(var_type, ArrayType):
+                if isinstance(var_type.element_type, ArrayType) and var_type.element_type.element_type == Type.FLOAT:
+                    value = np.array([])
+                elif var_type.element_type == Type.FLOAT:
+                    value = np.array([])
+                else:
+                    value = []
+            elif isinstance(var_type, ListType):
                 value = []
 
         self.current_env.define(name, value)
@@ -321,6 +345,46 @@ class Interpreter(SimpleLangVisitor):
             lst.remove(value)
         elif "sort" in op_text:
             lst.sort()
+
+    def visitMatrixOp(self, ctx):
+        matrix_name = ctx.IDENTIFIER().getText()
+        matrix = self.current_env.get(matrix_name)
+        op_text = ctx.getText()
+
+        if not isinstance(matrix, np.ndarray):
+            raise TypeError(f"{matrix_name} is not a matrix")
+
+        if "add" in op_text:
+            other_matrix = self.visit(ctx.expr())
+            if isinstance(other_matrix, np.ndarray):
+                result = np.add(matrix, other_matrix)
+                result_var = matrix_name + "_add"
+                self.current_env.define(result_var, result)
+                return result
+            else:
+                raise TypeError("Matrix addition requires a numpy array as the second operand")
+        elif "multiply" in op_text:
+            other_matrix = self.visit(ctx.expr())
+            if isinstance(other_matrix, np.ndarray):
+                result = np.matmul(matrix, other_matrix)
+                result_var = matrix_name + "_multiply"
+                self.current_env.define(result_var, result)
+                return result
+            else:
+                raise TypeError("Matrix multiplication requires a numpy array as the second operand")
+        elif "invert" in op_text:
+            try:
+                result = np.linalg.inv(matrix)
+                result_var = matrix_name + "_invert"
+                self.current_env.define(result_var, result)
+                return result
+            except np.linalg.LinAlgError:
+                raise ValueError("Matrix is singular and cannot be inverted")
+        elif "transpose" in op_text:
+            result = np.transpose(matrix)
+            result_var = matrix_name + "_transpose"
+            self.current_env.define(result_var, result)
+            return result
 
     def visitIfStatement(self, ctx):
         condition = self.visit(ctx.expr())

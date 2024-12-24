@@ -30,6 +30,7 @@ statement
     | commentStmt
     | arrayOp 
     | listOp 
+    | matrixOp 
     | whileStatement
     | block
     ;
@@ -49,6 +50,10 @@ arrayOp: IDENTIFIER '.' (
 ) ';' ;
 
 listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ')') ';' ;
+
+matrixOp
+    : IDENTIFIER '.' ('add' '(' expr ')' | 'multiply' '(' expr ')' | 'invert' '(' ')' | 'transpose' '(' ')') ';'
+    ;
 
 ifStatement
     : 'if' '(' expr ')' block ('else' block)?
