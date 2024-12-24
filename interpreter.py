@@ -343,17 +343,72 @@ class Interpreter(SimpleLangVisitor):
             if not positions_expr:
                 raise ValueError("Missing number of positions for shift operation")
             positions = int(self.visit(positions_expr))
-            
+
             if positions == 0:
                 shifted_array = array[:]
             else:
                 positions = positions % len(array)
                 shifted_array = [0] * positions + array[:len(array) - positions]
-            
+
             result_var = array_name + "_shift"
             self.current_env.define(result_var, shifted_array)
             return shifted_array
+        elif "filter" in op_text:
+            lambda_expr = ctx.lambdaExpr()
+            if not lambda_expr:
+                raise ValueError("Missing lambda expression for filter operation")
 
+            lambda_param = lambda_expr.IDENTIFIER().getText()
+            lambda_body = lambda_expr.expr()
+
+            filtered_array = [
+                element for element in array
+                if self._evaluate_lambda(lambda_param, lambda_body, element)
+            ]
+            result_var = array_name + "_filter"
+            self.current_env.define(result_var, filtered_array)
+            return filtered_array
+        elif "map" in op_text:
+            lambda_expr = ctx.lambdaExpr()
+            if not lambda_expr:
+                raise ValueError("Missing lambda expression for map operation")
+
+            lambda_param = lambda_expr.IDENTIFIER().getText()
+            lambda_body = lambda_expr.expr()
+
+            mapped_array = [
+                self._evaluate_lambda(lambda_param, lambda_body, element)
+                for element in array
+            ]
+            result_var = array_name + "_map"
+            self.current_env.define(result_var, mapped_array)
+            return mapped_array
+
+
+    def _evaluate_lambda(self, param_name, lambda_body, value):
+        previous_env = self.current_env
+        self.current_env = Environment(previous_env)
+
+        try:
+            self.current_env.define(param_name, value)
+            result = self.visit(lambda_body)
+        finally:
+            self.current_env = previous_env
+
+        return result
+
+        
+    def _evaluate_lambda(self, param_name, lambda_body, value):
+        previous_env = self.current_env
+        self.current_env = Environment(previous_env)
+
+        try:
+            self.current_env.define(param_name, value)
+            result = self.visit(lambda_body)
+        finally:
+            self.current_env = previous_env
+
+        return result
 
     def visitListOp(self, ctx):
         list_name = ctx.IDENTIFIER().getText()

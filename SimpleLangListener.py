@@ -116,6 +116,15 @@ class SimpleLangListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SimpleLangParser#lambdaExpr.
+    def enterLambdaExpr(self, ctx:SimpleLangParser.LambdaExprContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#lambdaExpr.
+    def exitLambdaExpr(self, ctx:SimpleLangParser.LambdaExprContext):
+        pass
+
+
     # Enter a parse tree produced by SimpleLangParser#listOp.
     def enterListOp(self, ctx:SimpleLangParser.ListOpContext):
         pass

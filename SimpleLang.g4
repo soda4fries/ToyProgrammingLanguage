@@ -49,8 +49,13 @@ arrayOp: IDENTIFIER '.' (
     'play' '(' ')' |
     'linreg' '(' expr ')' |
     'rotate' '(' expr ')' |
-    'shift' '(' expr ')'
+    'shift' '(' expr ')' |
+    'filter' '(' lambdaExpr ')' |
+    'map' '(' lambdaExpr ')'
+
 ) ';' ;
+
+lambdaExpr: IDENTIFIER '=>' expr ;
 
 listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ')') ';' ;
 
