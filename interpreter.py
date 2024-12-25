@@ -3,6 +3,8 @@ import random
 from antlr4 import *
 from SimpleLangVisitor import SimpleLangVisitor
 from typing import Any, Dict, List, Optional
+from typing import List, Dict, Union
+from typing import Any, List, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum, auto
 import operator
@@ -72,11 +74,13 @@ class Environment:
 
 class StatisticalFunctions:
     @staticmethod
-    def mean(array):
+    def mean(array: List[Union[int, float]]) -> float:
+        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
         return float(sum(array)) / len(array)
 
     @staticmethod
-    def median(array):
+    def median(array: List[Union[int, float]]) -> float:
+        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
         sorted_array = sorted(array)
         n = len(sorted_array)
         if n % 2 == 0:
@@ -84,16 +88,20 @@ class StatisticalFunctions:
         return sorted_array[n // 2]
 
     @staticmethod
-    def variance(array):
+    def variance(array: List[Union[int, float]]) -> float:
+        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
         mean = StatisticalFunctions.mean(array)
         return sum((x - mean) ** 2 for x in array) / len(array)
 
     @staticmethod
-    def std_dev(array):
+    def std_dev(array: List[Union[int, float]]) -> float:
+        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
         return StatisticalFunctions.variance(array) ** 0.5
 
     @staticmethod
-    def linear_regression(x, y):
+    def linear_regression(x: List[Union[int, float]], y: List[Union[int, float]]) -> Dict[str, float]:
+        assert all(isinstance(i, (int, float)) for i in x), "X elements must be int or float"
+        assert all(isinstance(i, (int, float)) for i in y), "Y elements must be int or float"
         if len(x) != len(y):
             raise ValueError("Arrays must be of equal length")
 
@@ -287,6 +295,15 @@ class Interpreter(SimpleLangVisitor):
             container = self.current_env.get(name)
             index = self.visit(exprs[0])
             value = self.visit(exprs[1])
+
+            # Ensure the container is a list or array
+            if not isinstance(container, (list, np.ndarray)):
+                raise TypeError(f"Variable '{name}' is expected to be a list or array, got {type(container)}")
+
+            # Ensure index is an integer
+            if not isinstance(index, int):
+                raise TypeError(f"Index must be an integer, got {type(index)}")
+
             container[index] = value
         else:
             value = self.visit(exprs[0])
@@ -297,89 +314,107 @@ class Interpreter(SimpleLangVisitor):
         array = self.current_env.get(array_name)
         op_text = ctx.getText()
 
+        # Check if the variable is a list or array
+        if not isinstance(array, (list, np.ndarray)):
+            raise TypeError(f"Variable '{array_name}' is not an array or list")
+
         if "sort" in op_text:
+            # Ensure the elements are comparable (int, float, or string)
+            if not all(isinstance(elem, (int, float, str)) for elem in array):
+                raise TypeError("Cannot sort array with mixed or non-comparable types")
             array.sort()
+
         elif "mean" in op_text:
+            # Ensure it's a numerical array for statistical functions
+            if not all(isinstance(elem, (int, float)) for elem in array):
+                raise TypeError(f"Mean can only be applied to numerical arrays, but got elements of different types")
             result = StatisticalFunctions.mean(array)
             result_var = array_name + "_mean"
-            self.current_env.define(result_var, result)  # Define before assign
+            self.current_env.define(result_var, result)
             return result
+
         elif "median" in op_text:
+            if not all(isinstance(elem, (int, float)) for elem in array):
+                raise TypeError(f"Median can only be applied to numerical arrays, but got elements of different types")
             result = StatisticalFunctions.median(array)
             result_var = array_name + "_median"
             self.current_env.define(result_var, result)
             return result
+
         elif "variance" in op_text:
+            if not all(isinstance(elem, (int, float)) for elem in array):
+                raise TypeError(f"Variance can only be applied to numerical arrays, but got elements of different types")
             result = StatisticalFunctions.variance(array)
             result_var = array_name + "_variance"
             self.current_env.define(result_var, result)
             return result
+
         elif "stddev" in op_text:
+            if not all(isinstance(elem, (int, float)) for elem in array):
+                raise TypeError(f"Standard deviation can only be applied to numerical arrays, but got elements of different types")
             result = StatisticalFunctions.std_dev(array)
             result_var = array_name + "_stddev"
             self.current_env.define(result_var, result)
             return result
+
         elif "play" in op_text:
+            # Play operation on array
             MusicPlayer.play(array)
+
         elif "linreg" in op_text:
             y_array = self.visit(ctx.expr())
+            if not isinstance(y_array, (list, np.ndarray)) or not all(isinstance(elem, (int, float)) for elem in y_array):
+                raise TypeError(f"Expected numerical array (list or numpy array) for linear regression, but got {type(y_array)}")
             result = StatisticalFunctions.linear_regression(array, y_array)
-            # Define before assign
             self.current_env.define(array_name + "_slope", result["slope"])
             self.current_env.define(array_name + "_intercept", result["intercept"])
             self.current_env.define(array_name + "_r_squared", result["r_squared"])
             return result
+
         elif "rotate" in op_text:
             positions_expr = ctx.expr()
             if not positions_expr:
                 raise ValueError("Missing number of positions for rotate operation")
             positions = int(self.visit(positions_expr))
+            if not isinstance(array, list):
+                raise TypeError("Rotate operation requires a list")
             rotated_array = array[-positions:] + array[:-positions]
             result_var = array_name + "_rotate"
             self.current_env.define(result_var, rotated_array)
             return rotated_array
+
         elif "shift" in op_text:
             positions_expr = ctx.expr()
             if not positions_expr:
                 raise ValueError("Missing number of positions for shift operation")
             positions = int(self.visit(positions_expr))
-
             if positions == 0:
                 shifted_array = array[:]
             else:
                 positions = positions % len(array)
                 shifted_array = [0] * positions + array[:len(array) - positions]
-
             result_var = array_name + "_shift"
             self.current_env.define(result_var, shifted_array)
             return shifted_array
+
         elif "filter" in op_text:
             lambda_expr = ctx.lambdaExpr()
             if not lambda_expr:
                 raise ValueError("Missing lambda expression for filter operation")
-
             lambda_param = lambda_expr.IDENTIFIER().getText()
             lambda_body = lambda_expr.expr()
-
-            filtered_array = [
-                element for element in array
-                if self._evaluate_lambda(lambda_param, lambda_body, element)
-            ]
+            filtered_array = [element for element in array if self._evaluate_lambda(lambda_param, lambda_body, element)]
             result_var = array_name + "_filter"
             self.current_env.define(result_var, filtered_array)
             return filtered_array
+
         elif "map" in op_text:
             lambda_expr = ctx.lambdaExpr()
             if not lambda_expr:
                 raise ValueError("Missing lambda expression for map operation")
-
             lambda_param = lambda_expr.IDENTIFIER().getText()
             lambda_body = lambda_expr.expr()
-
-            mapped_array = [
-                self._evaluate_lambda(lambda_param, lambda_body, element)
-                for element in array
-            ]
+            mapped_array = [self._evaluate_lambda(lambda_param, lambda_body, element) for element in array]
             result_var = array_name + "_map"
             self.current_env.define(result_var, mapped_array)
             return mapped_array
@@ -429,35 +464,45 @@ class Interpreter(SimpleLangVisitor):
         matrix = self.current_env.get(matrix_name)
         op_text = ctx.getText()
 
+        # Ensure the variable is a numpy array
         if not isinstance(matrix, np.ndarray):
-            raise TypeError(f"{matrix_name} is not a matrix")
+            raise TypeError(f"Variable '{matrix_name}' is not a numpy matrix")
 
         if "add" in op_text:
             other_matrix = self.visit(ctx.expr())
             if isinstance(other_matrix, np.ndarray):
+                if matrix.shape != other_matrix.shape:
+                    raise ValueError("Matrix addition requires matrices of the same shape")
                 result = np.add(matrix, other_matrix)
                 result_var = matrix_name + "_add"
                 self.current_env.define(result_var, result)
                 return result
             else:
                 raise TypeError("Matrix addition requires a numpy array as the second operand")
+
         elif "multiply" in op_text:
             other_matrix = self.visit(ctx.expr())
             if isinstance(other_matrix, np.ndarray):
+                if matrix.shape[1] != other_matrix.shape[0]:
+                    raise ValueError("Matrix multiplication requires compatible dimensions")
                 result = np.matmul(matrix, other_matrix)
                 result_var = matrix_name + "_multiply"
                 self.current_env.define(result_var, result)
                 return result
             else:
                 raise TypeError("Matrix multiplication requires a numpy array as the second operand")
+
         elif "invert" in op_text:
+            if matrix.shape[0] != matrix.shape[1]:
+                raise ValueError("Matrix inversion requires a square matrix")
             try:
                 result = np.linalg.inv(matrix)
                 result_var = matrix_name + "_invert"
                 self.current_env.define(result_var, result)
                 return result
             except np.linalg.LinAlgError:
-                raise ValueError("Matrix is singular and cannot be inverted")
+                raise ValueError(f"Matrix '{matrix_name}' is singular and cannot be inverted")
+
         elif "transpose" in op_text:
             result = np.transpose(matrix)
             result_var = matrix_name + "_transpose"
@@ -479,7 +524,11 @@ class Interpreter(SimpleLangVisitor):
             if not isinstance(value, list) or len(value) != len(pattern):
                 return False
             return all(self._match_pattern(v, p) for v, p in zip(value, pattern))
+        # Add type checking for mismatched types
+        if type(value) != type(pattern):
+            return False  # Types don't match
         return value == pattern  # Exact match
+
 
     def visitMatchCase(self, ctx):
         pattern = self.visit(ctx.pattern())  # Visit pattern
@@ -582,8 +631,9 @@ class Interpreter(SimpleLangVisitor):
                 }
                 return ops[op](left, right)
             else:
+                # Raise error for unsupported types in binary operations
                 raise TypeError(
-                    f"Unsupported operation between {type(left)} and {type(right)}"
+                    f"Unsupported operation '{op}' between {type(left)} and {type(right)}"
                 )
         elif ctx.expr(0):  # Parentheses
             return self.visit(ctx.expr(0))
