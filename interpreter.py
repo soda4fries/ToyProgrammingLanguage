@@ -319,9 +319,6 @@ class Interpreter(SimpleLangVisitor):
             raise TypeError(f"Variable '{array_name}' is not an array or list")
 
         if "sort" in op_text:
-            # Ensure the elements are comparable (int, float, or string)
-            if not all(isinstance(elem, (int, float, str)) for elem in array):
-                raise TypeError("Cannot sort array with mixed or non-comparable types")
             array.sort()
 
         elif "mean" in op_text:

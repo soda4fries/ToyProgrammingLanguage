@@ -19,6 +19,11 @@ let data: array<float> = [1.0, 2.0, 3.0, 4.0, 5.0];
 data.mean();  
 print("Mean:", data_mean);
 
+// Mixed Data Type Array Handling
+let data1: array<float> = [5, 12.0, "Banana", "monkey", true, false, 19.5, 30.9, -2.1, "zoo"];
+data1.sort();
+print("Sorted Array: ", data1);
+
 // Test other operations
 data.median();
 print("Median:", data_median);
