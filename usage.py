@@ -69,6 +69,14 @@ match arr {
     case _ => print("Array does not match");
 }
 
+let numbers: array<int> = [1, 2, 3, 4, 5];
+numbers.filter(x => x % 2 == 0);
+print(numbers_filter);
+
+let numbers: array<int> = [1, 2, 3, 4, 5];
+numbers.map(x => x * x);
+print(numbers_map);
+
 // Array rotation and shifting
 let nums: array<int> = [1, 2, 3, 4, 5];
 nums.rotate(1);

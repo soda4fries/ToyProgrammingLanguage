@@ -21,15 +21,15 @@ Three primitive types - int, bool, string with static typing
 
 Variable declarations (let), assignments, if/else control flow, returns, and function calls
 
-Arithmetic (+,-,*,/), comparisons (>,<,>=,<=,==,!=), logical (and,or), parentheses grouping
+Arithmetic (+,-,\*,/), comparisons (>,<,>=,<=,==,!=), logical (and,or), parentheses grouping
 
 Defined with 'func', support parameters with default values, explicit return types, and return statements
 
 Lexical scoping with global and local environments, variables must be declared before use
 
-Supports both single-line (//) and multi-line (/* */) comment
+Supports both single-line (//) and multi-line (/\* \*/) comment
 
-uses exceptions to get return value 
+uses exceptions to get return value
 
 ## **How to run this program**
 
@@ -49,7 +49,7 @@ uses exceptions to get return value
 """
 // Statistical operations
 let data: array<float> = [1.0, 2.0, 3.0, 4.0, 5.0];
-data.mean();  
+data.mean();
 print("Mean:", data_mean);
 
 // Test other operations
@@ -101,6 +101,14 @@ match arr {
     case [1, 2, 3] => print("Array matches [1, 2, 3]");
     case _ => print("Array does not match");
 }
+
+let numbers: array<int> = [1, 2, 3, 4, 5];
+numbers.filter(x => x % 2 == 0);
+print(numbers_filter);
+
+let numbers: array<int> = [1, 2, 3, 4, 5];
+numbers.map(x => x * x);
+print(numbers_map);
 
 // Array rotation and shifting
 let nums: array<int> = [1, 2, 3, 4, 5];
