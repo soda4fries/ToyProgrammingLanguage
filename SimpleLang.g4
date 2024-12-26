@@ -51,9 +51,10 @@ arrayOp: IDENTIFIER '.' (
     'rotate' '(' expr ')' |
     'shift' '(' expr ')' |
     'filter' '(' lambdaExpr ')' |
-    'map' '(' lambdaExpr ')'
-
+    'map' '(' lambdaExpr (',' namedArgument)* ')'
 ) ';' ;
+
+namedArgument: IDENTIFIER '=' expr;
 
 lambdaExpr: IDENTIFIER '=>' expr ;
 

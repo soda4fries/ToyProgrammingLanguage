@@ -50,10 +50,13 @@ class ReturnValue:
 class Environment:
     def __init__(self, parent=None):
         self.values: Dict[str, Any] = {}
+        self.types: Dict[str, Type] = {}  # New dictionary to track variable types
         self.parent = parent
 
-    def define(self, name: str, value: Any):
+    def define(self, name: str, value: Any, var_type: Optional[Type] = None):
         self.values[name] = value
+        if var_type:
+            self.types[name] = var_type
 
     def get(self, name: str) -> Any:
         if name in self.values:
@@ -62,14 +65,42 @@ class Environment:
             return self.parent.get(name)
         raise NameError(f"Variable '{name}' is not defined")
 
+    def get_type(self, name: str) -> Type:
+        if name in self.types:
+            return self.types[name]
+        if self.parent:
+            return self.parent.get_type(name)
+        raise NameError(f"Type for variable '{name}' is not defined")
+
     def assign(self, name: str, value: Any):
         if name in self.values:
+            var_type = self.get_type(name)
+            if not self._check_type(value, var_type):
+                raise TypeError(f"Cannot assign value of type {type(value)} to variable '{name}' of type {var_type}")
             self.values[name] = value
             return
         if self.parent:
             self.parent.assign(name, value)
             return
         raise NameError(f"Variable '{name}' is not defined")
+    
+    @staticmethod
+    def _check_type(value: Any, expected_type: Type) -> bool:
+        type_map = {
+            Type.INT: int,
+            Type.FLOAT: float,
+            Type.BOOL: bool,
+            Type.STRING: str,
+            ArrayType: list,
+            ListType: list,
+        }
+        # Special handling for array and list types
+        if isinstance(expected_type, ArrayType):
+            return isinstance(value, list) and all(Environment._check_type(elem, expected_type.element_type) for elem in value)
+        if isinstance(expected_type, ListType):
+            return isinstance(value, list) and all(Environment._check_type(elem, expected_type.element_type) for elem in value)
+        # Default case
+        return isinstance(value, type_map.get(expected_type, object))
 
 
 class StatisticalFunctions:
@@ -263,11 +294,16 @@ class Interpreter(SimpleLangVisitor):
 
         if ctx.expr():
             value = self.visit(ctx.expr())
-            if isinstance(var_type, ArrayType) and var_type.element_type == ArrayType(Type.FLOAT):
-                value = np.array(value)
-            elif isinstance(var_type, ArrayType) and var_type.element_type == Type.FLOAT:
-                value = np.array(value)
+            # Type checking during declaration
+            if not self.current_env._check_type(value, var_type):
+                raise TypeError(f"Cannot assign value of type {type(value).__name__} to variable '{name}' of type {var_type.name}")
+            
+            # Handle array type initialization
+            if isinstance(var_type, ArrayType):
+                if var_type.element_type == Type.FLOAT:
+                    value = np.array(value)
         else:
+            # Set default values based on the type
             if var_type == Type.FLOAT:
                 value = 0.0
             elif var_type == Type.INT:
@@ -277,16 +313,11 @@ class Interpreter(SimpleLangVisitor):
             elif var_type == Type.STRING:
                 value = ""
             elif isinstance(var_type, ArrayType):
-                if isinstance(var_type.element_type, ArrayType) and var_type.element_type.element_type == Type.FLOAT:
-                    value = np.array([])
-                elif var_type.element_type == Type.FLOAT:
-                    value = np.array([])
-                else:
-                    value = []
+                value = np.array([]) if var_type.element_type == Type.FLOAT else []
             elif isinstance(var_type, ListType):
                 value = []
 
-        self.current_env.define(name, value)
+        self.current_env.define(name, value, var_type)
 
     def visitAssignment(self, ctx):
         name = ctx.IDENTIFIER().getText()
@@ -298,11 +329,16 @@ class Interpreter(SimpleLangVisitor):
 
             # Ensure the container is a list or array
             if not isinstance(container, (list, np.ndarray)):
-                raise TypeError(f"Variable '{name}' is expected to be a list or array, got {type(container)}")
+                raise TypeError(f"Variable '{name}' is expected to be a list or array, got {type(container).__name__}")
 
             # Ensure index is an integer
             if not isinstance(index, int):
-                raise TypeError(f"Index must be an integer, got {type(index)}")
+                raise TypeError(f"Index must be an integer, got {type(index).__name__}")
+
+            # Type checking for array elements
+            container_type = self.current_env.get_type(name)
+            if isinstance(container_type, ArrayType) and not self.current_env._check_type(value, container_type.element_type):
+                raise TypeError(f"Cannot assign value of type {type(value).__name__} to array element of type {container_type.element_type.name}")
 
             container[index] = value
         else:
@@ -407,32 +443,37 @@ class Interpreter(SimpleLangVisitor):
             result_var = array_name + "_filter"
             self.current_env.define(result_var, filtered_array)
             return filtered_array
-
+        
         elif "map" in op_text:
+            # Parse the lambda expression
             lambda_expr = ctx.lambdaExpr()
             if not lambda_expr:
                 raise ValueError("Missing lambda expression for map operation")
             lambda_param = lambda_expr.IDENTIFIER().getText()
             lambda_body = lambda_expr.expr()
+
+            # Map the array using the lambda expression
             mapped_array = [self._evaluate_lambda(lambda_param, lambda_body, element) for element in array]
-            result_var = array_name + "_map"
-            self.current_env.define(result_var, mapped_array)
-            return mapped_array
 
+            # Parse named arguments
+            named_args = {}
+            if ctx.namedArgument():
+                for named_arg in ctx.namedArgument():
+                    arg_name = named_arg.IDENTIFIER().getText()
+                    arg_value = self.visit(named_arg.expr())
+                    named_args[arg_name] = arg_value
 
-    def _evaluate_lambda(self, param_name, lambda_body, value):
-        previous_env = self.current_env
-        self.current_env = Environment(previous_env)
+            # Check for the `mutate` argument
+            if named_args.get("mutate", False):  # If mutate=true
+                # Mutate the original array
+                self.current_env.define(array_name, mapped_array)
+                return mapped_array
+            else:
+                # Default behavior: create a new variable for the mapped array
+                result_var = array_name + "_map"
+                self.current_env.define(result_var, mapped_array)
+                return mapped_array
 
-        try:
-            self.current_env.define(param_name, value)
-            result = self.visit(lambda_body)
-        finally:
-            self.current_env = previous_env
-
-        return result
-
-        
     def _evaluate_lambda(self, param_name, lambda_body, value):
         previous_env = self.current_env
         self.current_env = Environment(previous_env)
