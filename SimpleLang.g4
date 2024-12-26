@@ -97,12 +97,14 @@ commentStmt
     | MULTI_LINE_COMMENT
     ;
 
+MOD: '%';
+
 expr
     : functionCall
     | primary
     | '-' expr
     | expr '[' expr ']'
-    | expr op=('*'|'/') expr
+    | expr op=('*'|'/'|MOD) expr
     | expr op=('+'|'-') expr
     | expr op=('>'|'<'|'>='|'<='|'=='|'!=') expr
     | expr op=('and'|'or') expr

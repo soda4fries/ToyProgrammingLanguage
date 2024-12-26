@@ -615,6 +615,7 @@ class Interpreter(SimpleLangVisitor):
                 ops = {
                     "*": operator.mul,
                     "/": operator.truediv,
+                    "%": operator.mod,
                     "+": operator.add,
                     "-": operator.sub,
                     ">": operator.gt,
