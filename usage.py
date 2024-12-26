@@ -15,6 +15,14 @@ def run_code(code: str):
 
 test_code = """
 // Statistical operations
+
+let data: array<int> = [3, 1, 4, 1, 5, 9];
+data.sort(); // Default ascending sort
+print("Ascending:", data);
+
+data.sort(desc); // Descending sort
+print("Descending:", data);
+
 let data: array<float> = [1.0, 2.0, 3.0, 4.0, 5.0];
 data.mean();  
 print("Mean:", data_mean);
@@ -74,12 +82,12 @@ match arr {
     case _ => print("Array does not match");
 }
 
-let numbers: array<int> = [1, 2, 3, 4, 5];
-numbers.filter(x => x % 2 == 0);
+let numbers: array<int> = [1,2,3,5,6,8];
+numbers.filter(x => x > 2);
 print(numbers_filter);
 
 let numbers: array<int> = [1, 2, 3, 4, 5];
-numbers.map(x => x * x);
+numbers.map(x => x + x * 3);
 print(numbers_map);
 
 // Array rotation and shifting

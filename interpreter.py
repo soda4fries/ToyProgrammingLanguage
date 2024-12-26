@@ -319,7 +319,17 @@ class Interpreter(SimpleLangVisitor):
             raise TypeError(f"Variable '{array_name}' is not an array or list")
 
         if "sort" in op_text:
-            array.sort()
+            desc = "desc" in op_text
+            if isinstance(array, list):
+                array.sort(reverse=desc)
+            elif isinstance(array, np.ndarray):
+                if desc:
+                    array = np.sort(array)[::-1] 
+                else:
+                    array = np.sort(array)
+                self.current_env.assign(array_name, array.tolist())
+            else:
+                raise TypeError(f"Unsupported type for sorting: {type(array)}")
 
         elif "mean" in op_text:
             # Ensure it's a numerical array for statistical functions

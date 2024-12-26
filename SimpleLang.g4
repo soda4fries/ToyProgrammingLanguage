@@ -41,7 +41,7 @@ varDecl: 'let' IDENTIFIER ':' type ('=' expr)? ';' ;
 assignment: IDENTIFIER ('['expr']')? '=' expr ';' ;
 
 arrayOp: IDENTIFIER '.' (
-    'sort' '(' ')' |
+    'sort' '(' ('desc')? ')' |
     'mean' '(' ')' |
     'median' '(' ')' |
     'variance' '(' ')' |
