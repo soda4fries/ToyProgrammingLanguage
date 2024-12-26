@@ -69,11 +69,6 @@ class SimpleLangVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleLangParser#namedArgument.
-    def visitNamedArgument(self, ctx:SimpleLangParser.NamedArgumentContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SimpleLangParser#lambdaExpr.
     def visitLambdaExpr(self, ctx:SimpleLangParser.LambdaExprContext):
         return self.visitChildren(ctx)
