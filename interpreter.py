@@ -394,12 +394,22 @@ class Interpreter(SimpleLangVisitor):
             positions_expr = ctx.expr()
             if not positions_expr:
                 raise ValueError("Missing number of positions for shift operation")
+            
             positions = int(self.visit(positions_expr))
-            if positions == 0:
-                shifted_array = array[:]
+            array_length = len(array)
+            
+            if array_length == 0:
+                shifted_array = []
             else:
-                positions = positions % len(array)
-                shifted_array = [0] * positions + array[:len(array) - positions]
+                if positions > 0:
+                    positions %= array_length
+                    shifted_array = [0] * positions + array[:array_length - positions]
+                elif positions < 0:
+                    positions = abs(positions) % array_length
+                    shifted_array = array[positions:] + [0] * positions
+                else:
+                    shifted_array = array[:]
+
             result_var = array_name + "_shift"
             self.current_env.define(result_var, shifted_array)
             return shifted_array
