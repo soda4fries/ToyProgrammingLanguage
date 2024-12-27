@@ -74,29 +74,65 @@ class Environment:
 
 class StatisticalFunctions:
     @staticmethod
-    def mean(array: List[Union[int, float]]) -> float:
-        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
-        return float(sum(array)) / len(array)
+    def mean(array: Union[List[Union[int, float]], np.ndarray]) -> float:
+        if isinstance(array, np.ndarray):
+            if array.size == 0:
+                raise ValueError("Cannot calculate mean of an empty array.")
+            return float(np.mean(array))
+        elif isinstance(array, list):
+            if not array:
+                raise ValueError("Cannot calculate mean of an empty list.")
+            assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
+            return float(sum(array)) / len(array)
+        else:
+            raise TypeError("Input must be a list or numpy array.")
 
     @staticmethod
-    def median(array: List[Union[int, float]]) -> float:
-        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
-        sorted_array = sorted(array)
-        n = len(sorted_array)
-        if n % 2 == 0:
-            return (sorted_array[n // 2 - 1] + sorted_array[n // 2]) / 2
-        return sorted_array[n // 2]
+    def median(array: Union[List[Union[int, float]], np.ndarray]) -> float:
+        if isinstance(array, np.ndarray):
+            if array.size == 0:
+                raise ValueError("Cannot calculate median of an empty array.")
+            return float(np.median(array))
+        elif isinstance(array, list):
+            if not array:
+                raise ValueError("Cannot calculate median of an empty list.")
+            assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
+            sorted_array = sorted(array)
+            n = len(sorted_array)
+            if n % 2 == 0:
+                return (sorted_array[n // 2 - 1] + sorted_array[n // 2]) / 2
+            return sorted_array[n // 2]
+        else:
+            raise TypeError("Input must be a list or numpy array.")
 
     @staticmethod
-    def variance(array: List[Union[int, float]]) -> float:
-        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
-        mean = StatisticalFunctions.mean(array)
-        return sum((x - mean) ** 2 for x in array) / len(array)
+    def variance(array: Union[List[Union[int, float]], np.ndarray]) -> float:
+        if isinstance(array, np.ndarray):
+            if array.size == 0:
+                raise ValueError("Cannot calculate variance of an empty array.")
+            return float(np.var(array))
+        elif isinstance(array, list):
+            if not array:
+                raise ValueError("Cannot calculate variance of an empty list.")
+            assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
+            mean = StatisticalFunctions.mean(array)
+            return sum((x - mean) ** 2 for x in array) / len(array)
+        else:
+            raise TypeError("Input must be a list or numpy array.")
 
     @staticmethod
-    def std_dev(array: List[Union[int, float]]) -> float:
-        assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
-        return StatisticalFunctions.variance(array) ** 0.5
+    def std_dev(array: Union[List[Union[int, float]], np.ndarray]) -> float:
+        if isinstance(array, np.ndarray):
+            if array.size == 0:
+                raise ValueError("Cannot calculate standard deviation of an empty array.")
+            return float(np.std(array))
+        elif isinstance(array, list):
+            if not array:
+                raise ValueError("Cannot calculate standard deviation of an empty list.")
+            assert all(isinstance(x, (int, float)) for x in array), "Array elements must be int or float"
+            return StatisticalFunctions.variance(array) ** 0.5
+        else:
+            raise TypeError("Input must be a list or numpy array.")
 
     @staticmethod
     def linear_regression(x: List[Union[int, float]], y: List[Union[int, float]]) -> Dict[str, float]:
@@ -479,37 +515,50 @@ class Interpreter(SimpleLangVisitor):
     def visitMatrixOp(self, ctx):
         matrix_name = ctx.IDENTIFIER().getText()
         matrix = self.current_env.get(matrix_name)
-        op_text = ctx.getText()
 
-        # Ensure the variable is a numpy array
         if not isinstance(matrix, np.ndarray):
-            raise TypeError(f"Variable '{matrix_name}' is not a numpy matrix")
+            try:
+                matrix = np.array(matrix)
+                self.current_env.assign(matrix_name, matrix)
+            except Exception as e:
+                raise TypeError(f"Variable '{matrix_name}' cannot be converted to a numpy matrix: {e}")
+
+        op_text = ctx.getText()
 
         if "add" in op_text:
             other_matrix = self.visit(ctx.expr())
-            if isinstance(other_matrix, np.ndarray):
-                if matrix.shape != other_matrix.shape:
-                    raise ValueError("Matrix addition requires matrices of the same shape")
-                result = np.add(matrix, other_matrix)
-                result_var = matrix_name + "_add"
-                self.current_env.define(result_var, result)
-                return result
-            else:
-                raise TypeError("Matrix addition requires a numpy array as the second operand")
+            other_matrix = np.array(other_matrix)
+            if matrix.size == 0 or other_matrix.size == 0:
+                raise ValueError("Matrix addition requires non-empty matrices.")
+            if matrix.shape != other_matrix.shape:
+                raise ValueError("Matrix addition requires matrices of the same shape.")
+            result = np.add(matrix, other_matrix)
+            result_var = f"{matrix_name}_add"
+            self.current_env.define(result_var, result)
+            return result
 
         elif "multiply" in op_text:
             other_matrix = self.visit(ctx.expr())
-            if isinstance(other_matrix, np.ndarray):
-                if matrix.shape[1] != other_matrix.shape[0]:
-                    raise ValueError("Matrix multiplication requires compatible dimensions")
-                result = np.matmul(matrix, other_matrix)
-                result_var = matrix_name + "_multiply"
-                self.current_env.define(result_var, result)
-                return result
-            else:
-                raise TypeError("Matrix multiplication requires a numpy array as the second operand")
+            other_matrix = np.array(other_matrix)
+
+            if matrix.size == 0 or other_matrix.size == 0:
+                raise ValueError("Matrix multiplication requires non-empty matrices.")
+
+            if matrix.shape[1] != other_matrix.shape[0]:
+                raise ValueError(
+                    f"Matrix multiplication requires the number of columns in the first matrix "
+                    f"({matrix.shape[1]}) to match the number of rows in the second matrix "
+                    f"({other_matrix.shape[0]})."
+                )
+            result = np.matmul(matrix, other_matrix)
+            result_var = matrix_name + "_multiply"
+            self.current_env.define(result_var, result)
+            return result
 
         elif "invert" in op_text:
+            if matrix.size == 0: 
+                raise ValueError("Matrix size should not be zero for inversion")
+
             if matrix.shape[0] != matrix.shape[1]:
                 raise ValueError("Matrix inversion requires a square matrix")
             try:
