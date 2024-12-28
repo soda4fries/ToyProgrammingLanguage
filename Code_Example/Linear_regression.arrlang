@@ -1,0 +1,8 @@
+// Linear regression
+let x: array<float> = [1.0, 2.0, 3.0, 4.0, 5.0];
+let y: array<float> = [2.1, 4.0, 6.3, 8.0, 9.9];
+x.linreg(y);
+print("Linear Regression Results:");
+print("Slope:", x_slope);
+print("Intercept:", x_intercept);
+print("R-squared:", x_r_squared);

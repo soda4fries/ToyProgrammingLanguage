@@ -1,0 +1,13 @@
+// Array rotation and shifting
+let nums: array<int> = [1, 2, 3, 4, 5];
+nums.rotate(1);
+print("Rotated Array (by 1):", nums_rotate);
+
+nums.rotate(2);
+print("Rotated Array (by 2):", nums_rotate);
+
+nums.rotate(3);
+print("Rotated Array (by 3):", nums_rotate);
+
+nums.shift(2);
+print("Shifted Array (by 2):", nums_shift);
