@@ -501,6 +501,10 @@ class Interpreter(SimpleLangVisitor):
     def visitListOp(self, ctx):
         list_name = ctx.IDENTIFIER().getText()
         lst = self.current_env.get(list_name)
+
+        if not isinstance(lst, list):
+            raise TypeError(f"Variable '{list_name}' is not a list")
+
         op_text = ctx.getText()
 
         if "append" in op_text:
@@ -508,9 +512,16 @@ class Interpreter(SimpleLangVisitor):
             lst.append(value)
         elif "remove" in op_text:
             value = self.visit(ctx.expr())
-            lst.remove(value)
+            if value in lst:
+                lst.remove(value)
+            else:
+                raise ValueError(f"Value '{value}' not found in the list")
         elif "sort" in op_text:
-            lst.sort()
+            desc = "desc" in op_text
+            lst.sort(reverse=desc)
+        else:
+            raise ValueError(f"Unsupported operation on list: {op_text}")
+
 
     def visitMatrixOp(self, ctx):
         matrix_name = ctx.IDENTIFIER().getText()

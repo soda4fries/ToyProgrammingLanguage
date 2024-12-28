@@ -57,7 +57,7 @@ arrayOp: IDENTIFIER '.' (
 
 lambdaExpr: IDENTIFIER '=>' expr ;
 
-listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ')') ';' ;
+listOp: IDENTIFIER '.' ('append' '(' expr ')' | 'remove' '(' expr ')' | 'sort' '(' ('desc')? ')') ';' ;
 
 matrixOp
     : IDENTIFIER '.' ('add' '(' expr ')' | 'multiply' '(' expr ')' | 'invert' '(' ')' | 'transpose' '(' ')') ';'
