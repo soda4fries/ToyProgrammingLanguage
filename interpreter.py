@@ -685,6 +685,18 @@ class Interpreter(SimpleLangVisitor):
         ):  
             container = self.visit(ctx.expr(0))
             index = self.visit(ctx.expr(1))
+            
+            if not isinstance(container, (list, np.ndarray)):
+                raise TypeError(f"Variable '{ctx.getChild(0).getText()}' is not an array or list")
+            
+            if not isinstance(index, int):
+                raise TypeError(f"Index must be an integer, got {type(index).__name__}")
+            
+            if index < 0 or index >= len(container):
+                raise IndexError(
+                    f"Index {index} is out of range for array of size {len(container)}."
+                )
+            
             return container[index]
         elif ctx.op:  # Binary operation
             left = self.visit(ctx.expr(0))
@@ -711,7 +723,7 @@ class Interpreter(SimpleLangVisitor):
             else:
                 # Raise error for unsupported types in binary operations
                 raise TypeError(
-                    f"Unsupported operation '{op}' between {type(left)} and {type(right)}"
+                    f"Unsupported operation '{op}' between {type(left).__name__} and {type(right).__name__}"
                 )
         elif ctx.expr(0):  # Parentheses
             return self.visit(ctx.expr(0))
