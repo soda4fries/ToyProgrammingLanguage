@@ -53,6 +53,24 @@ class SimpleLangListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SimpleLangParser#arrayType.
+    def enterArrayType(self, ctx:SimpleLangParser.ArrayTypeContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#arrayType.
+    def exitArrayType(self, ctx:SimpleLangParser.ArrayTypeContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#listType.
+    def enterListType(self, ctx:SimpleLangParser.ListTypeContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#listType.
+    def exitListType(self, ctx:SimpleLangParser.ListTypeContext):
+        pass
+
+
     # Enter a parse tree produced by SimpleLangParser#block.
     def enterBlock(self, ctx:SimpleLangParser.BlockContext):
         pass
@@ -89,12 +107,84 @@ class SimpleLangListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SimpleLangParser#arrayOp.
+    def enterArrayOp(self, ctx:SimpleLangParser.ArrayOpContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#arrayOp.
+    def exitArrayOp(self, ctx:SimpleLangParser.ArrayOpContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#lambdaExpr.
+    def enterLambdaExpr(self, ctx:SimpleLangParser.LambdaExprContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#lambdaExpr.
+    def exitLambdaExpr(self, ctx:SimpleLangParser.LambdaExprContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#listOp.
+    def enterListOp(self, ctx:SimpleLangParser.ListOpContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#listOp.
+    def exitListOp(self, ctx:SimpleLangParser.ListOpContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#matrixOp.
+    def enterMatrixOp(self, ctx:SimpleLangParser.MatrixOpContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#matrixOp.
+    def exitMatrixOp(self, ctx:SimpleLangParser.MatrixOpContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#matchStatement.
+    def enterMatchStatement(self, ctx:SimpleLangParser.MatchStatementContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#matchStatement.
+    def exitMatchStatement(self, ctx:SimpleLangParser.MatchStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#matchCase.
+    def enterMatchCase(self, ctx:SimpleLangParser.MatchCaseContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#matchCase.
+    def exitMatchCase(self, ctx:SimpleLangParser.MatchCaseContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#pattern.
+    def enterPattern(self, ctx:SimpleLangParser.PatternContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#pattern.
+    def exitPattern(self, ctx:SimpleLangParser.PatternContext):
+        pass
+
+
     # Enter a parse tree produced by SimpleLangParser#ifStatement.
     def enterIfStatement(self, ctx:SimpleLangParser.IfStatementContext):
         pass
 
     # Exit a parse tree produced by SimpleLangParser#ifStatement.
     def exitIfStatement(self, ctx:SimpleLangParser.IfStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpleLangParser#whileStatement.
+    def enterWhileStatement(self, ctx:SimpleLangParser.WhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by SimpleLangParser#whileStatement.
+    def exitWhileStatement(self, ctx:SimpleLangParser.WhileStatementContext):
         pass
 
 

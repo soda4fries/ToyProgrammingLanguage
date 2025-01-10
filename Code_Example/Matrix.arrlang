@@ -1,0 +1,15 @@
+// Matrix operations
+let matrix1: array<array<float>> = [[1.0, 2.0], [3.0, 4.0]];
+let matrix2: array<array<float>> = [[5.0, 6.0], [7.0, 8.0]];
+
+matrix1.add(matrix2);
+print("Matrix Addition Result:", matrix1_add);
+
+matrix1.multiply(matrix2);
+print("Matrix Multiplication Result:", matrix1_multiply);
+
+matrix1.invert();
+print("Matrix Inversion Result:", matrix1_invert);
+
+matrix1.transpose();
+print("Matrix Transpose Result:", matrix1_transpose);
